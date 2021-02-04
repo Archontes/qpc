@@ -4,8 +4,8 @@
 * @ingroup qs
 * @cond
 ******************************************************************************
-* Last updated for version 6.9.2
-* Last updated on  2021-01-14
+* Last updated for version 6.9.2a
+* Last updated on  2021-01-28
 *
 *                    Q u a n t u m  L e a P s
 *                    ------------------------
@@ -390,14 +390,12 @@ void QS_queryCurrObj(uint8_t obj_kind) {
 /****************************************************************************/
 void QS_rxParse(void) {
     QSCtr head = QS_rxPriv_.head;
-    QSCtr tail = QS_rxPriv_.tail;
-    QSCtr end  = QS_rxPriv_.end;
-    while (head != tail) { /* QS-RX buffer NOT empty? */
-        uint8_t b = *QS_RX_AT_(tail);
+    while (head != QS_rxPriv_.tail) { /* QS-RX buffer NOT empty? */
+        uint8_t b = *QS_RX_AT_(QS_rxPriv_.tail);
 
-        ++tail;
-        if (tail == end) {
-            tail = 0U;
+        ++QS_rxPriv_.tail;
+        if (QS_rxPriv_.tail == QS_rxPriv_.end) {
+            QS_rxPriv_.tail = 0U;
         }
 
         if (l_rx.esc != 0U) {  /* escaped byte arrived? */
@@ -431,7 +429,6 @@ void QS_rxParse(void) {
             QS_rxParseData_(b);
         }
     }
-    QS_rxPriv_.tail = tail;
 }
 
 /****************************************************************************/
@@ -732,7 +729,7 @@ static void QS_rxParseData_(uint8_t b) {
             break;
         }
         case WAIT4_OBJ_ADDR: {
-            l_rx.var.obj.addr |= ((uint32_t)b << l_rx.var.obj.idx);
+            l_rx.var.obj.addr |= ((QSObj)b << l_rx.var.obj.idx);
             l_rx.var.obj.idx += 8U;
             if (l_rx.var.obj.idx == (uint8_t)(8*QS_OBJ_PTR_SIZE)) {
                 QS_RX_TRAN_(WAIT4_OBJ_FRAME);
@@ -849,7 +846,7 @@ static void QS_rxParseData_(uint8_t b) {
             break;
         }
         case WAIT4_TEST_PROBE_ADDR: {
-            l_rx.var.tp.addr |= ((uint32_t)b << l_rx.var.tp.idx);
+            l_rx.var.tp.addr |= ((QSFun)b << l_rx.var.tp.idx);
             l_rx.var.tp.idx += 8U;
             if (l_rx.var.tp.idx == (uint8_t)(8U * QS_FUN_PTR_SIZE)) {
                 QS_RX_TRAN_(WAIT4_TEST_PROBE_FRAME);
